@@ -1,0 +1,18 @@
+---
+layout: default
+---
+<article>
+  <header style="margin-bottom: 20px;">
+    <h2 style="margin-bottom: 5px;">{{ page.title }}</h2>
+    <span class="post-date">{{ page.date | date: "%B %d, %Y" }}</span>
+    {% if page.tags %}
+      <div style="margin-top: 10px;">
+        {% for tag in page.tags %}
+          <span style="background: #30363d; padding: 3px 8px; border-radius: 12px; font-size: 0.8em; margin-right: 5px;">{{ tag }}</span>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </header>
+  
+  {{ content }}
+</article>
