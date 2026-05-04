@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Malware Analysis: [Malware Name or Sample Type]"
+title: "Malware Analysis: FreePBX Bash Backdoor"
 date: 2026-05-04
 tags: [malware analysis, reverse engineering]
 ---
