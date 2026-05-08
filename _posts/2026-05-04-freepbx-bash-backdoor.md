@@ -170,6 +170,9 @@ The code is very obfuscated and complicated with a lot of base64 and bash nonsen
 
 ## Indicators of Compromise (IOCs)
 
+**File Hashes:**
+* **SHA256:** `e41f46802dfb3a38973d3b11eb19d333184e3d396128219daedb70dd517b9daa`
+
 **C2 Infrastructure (IPv4 & URLs):**
 * 45.95.147.178
 * [http://45.95.147.178/x](http://45.95.147.178/x)
