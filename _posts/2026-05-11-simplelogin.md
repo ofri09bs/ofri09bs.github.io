@@ -80,25 +80,25 @@ void correct(void)
 ```
 So we need that the first 4 bytes of input will be -0x21524111 (which is the value **0xdeadbeef**), so this works prefectly.  
 
-See this brief summery of the registers if you didnt fully understand:  
+See this **brief summery of the registers** if you didnt fully understand:  
 
 >**Note**: reg = x means that reg points to the address x and [reg] = x means that the value in the address that reg points to is x.
 > 
->in **auth()**:
->ebp = some_address_on_the_stack, [ebp] = 0x0811eb40
->moves esp to ebp -> esp = ebp = some_address_on_the_stack
->pop ebp -> ebp = 0x0811eb40, esp = some_address_on_the_stack + 4 = return address
->return to main.
+>in **auth()**:  
+>ebp = some_address_on_the_stack, [ebp] = 0x0811eb40  
+>moves esp to ebp -> esp = ebp = some_address_on_the_stack  
+>pop ebp -> ebp = 0x0811eb40, esp = some_address_on_the_stack + 4 = return address  
+>return to main.  
 > 
->in **main()**:
->....
->finish function
->leave instructios:
->moves esp to ebp -> esp = ebp = 0x0811eb40
->pop ebp -> ebp = 0xdeadbeef (ebp not in use anymore), esp = 0x0811eb40 + 4 = 0x0811eb44 (the address containing correct's address)
->ret instruction:
->eip = [esp] = 0x0804925f
->jump to correct().
+>in **main()**:  
+>....  
+>finish function  
+>leave instructios:  
+>moves esp to ebp -> esp = ebp = 0x0811eb40  
+>pop ebp -> ebp = 0xdeadbeef (ebp not in use anymore), esp = 0x0811eb40 + 4 = 0x0811eb44 (the address containing correct's address)  
+>ret instruction:  
+>eip = [esp] = 0x0804925f  
+>jump to correct().  
 
 ## The Final Exploit
 
