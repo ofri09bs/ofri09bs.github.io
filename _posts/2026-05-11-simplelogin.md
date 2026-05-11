@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Pwnable.kr: SimpleLogin Writeup"
-date: 2026-05-04
+date: 2026-05-11
 tags: [pwnable, exploit, reverse engineering]
 ---
 
