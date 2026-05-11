@@ -63,10 +63,10 @@ CALL       memcpy
 ```  
 so we understand that the buffer starts from `ebp + (-0x14 + 0xc)` = `ebp - 0x8`, so now we know that we can exactly **overwrite ebp using memcpy**.  
 
-Now to try to control the program I will overwrite `ebp` with the **address of input** and also the first 8 bytes of input will be **padding+correct function address**, and then when we finish main, **the leave instruction will move the stack pointer to point to the correct function, and then the ret instruction will move the instruction pointer to correct**.  
-Using **objdump** and Ghidra I found that the address of `input` is **0x0811eb40**, and the address of `correct` is **0x0804925f**.
+Now to try to control the program I will overwrite `ebp` with the **address of input** and also the first 8 bytes of input will be **padding+correct() address**, and then when we finish main, **the leave instruction will move the stack pointer to point to correct()'s address, and then the ret instruction will move the instruction pointer to correct()**.  
+Using **objdump** and Ghidra I found that the address of `input` is **0x0811eb40**, and the address of `correct()` is **0x0804925f**.
 
-We should also note that in the function `correct` there is a check:
+We should also note that in the function `correct()` there is a check:
 ```
 void correct(void)
 {
