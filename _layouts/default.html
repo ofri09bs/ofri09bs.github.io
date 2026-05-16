@@ -27,6 +27,38 @@
         code { font-family: "Courier New", Courier, monospace; font-size: 0.9em; }
         header { border-bottom: 1px solid #30363d; margin-bottom: 30px; padding-bottom: 20px; }
         .post-date { color: #8b949e; font-size: 0.9em; margin-right: 15px; }
+        
+        /* Footer Styles */
+        footer {
+            margin-top: 60px;
+            padding-top: 30px;
+            border-top: 1px solid #30363d;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            color: #8b949e;
+            font-size: 0.9em;
+        }
+        .footer-section { flex: 1; min-width: 250px; }
+        .footer-section h3 { color: #c9d1d9; font-size: 1.1em; margin-top: 0; margin-bottom: 15px; }
+        .subscribe-input {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #30363d;
+            background: #0d1117;
+            color: #c9d1d9;
+            flex: 1;
+        }
+        .subscribe-btn {
+            background-color: #238636;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .subscribe-btn:hover { background-color: #2ea043; }
     </style>
 </head>
 <body>
@@ -38,8 +70,34 @@
             <a href="/tags.html" style="font-weight: bold;">Tags</a>
         </nav>
     </header>
+    
     <main>
         {{ content }}
     </main>
+
+    <footer>
+        <div class="footer-section">
+            <h3>💬 Contact Me</h3>
+            <p style="margin-bottom: 10px;">Feel free to reach out for collaborations, questions, or just to talk cyber.</p>
+            <ul style="list-style: none; padding: 0; margin: 0;">
+                <li style="margin-bottom: 8px;">
+                    <strong>Email:</strong> <a href="mailto:ofri09bs@gmail.com">ofri09bs@gmail.com</a>
+                </li>
+                <li>
+                    <strong>Discord:</strong> <span style="color: #c9d1d9;">ofri404</span>
+                </li>
+            </ul>
+        </div>
+
+        <div class="footer-section">
+            <h3>📬 Newsletter</h3>
+            <p style="margin-bottom: 10px;">Subscribe to get an email whenever I publish a new write-up or log.</p>
+            
+            <form action="https://formspree.io/f/xjgzbkrq" method="POST" style="display: flex; gap: 10px;">
+                <input type="email" name="email" class="subscribe-input" placeholder="Your email address" required>
+                <button type="submit" class="subscribe-btn">Subscribe</button>
+            </form>
+        </div>
+    </footer>
 </body>
 </html>
