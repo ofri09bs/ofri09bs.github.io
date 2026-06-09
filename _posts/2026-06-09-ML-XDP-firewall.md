@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "ML-Powered-Kernel-Firewall"
+title: "Coding Project: ML-Powered-Kernel-Firewall"
 date: 2026-06-09
 tags: [development]
 ---
