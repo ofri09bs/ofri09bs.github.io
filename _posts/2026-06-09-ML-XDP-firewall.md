@@ -1,7 +1,7 @@
 ---
 layout: post
-title: "Malware Analysis: FreePBX Bash Backdoor"
-date: 2026-05-04
+title: "ML-Powered-Kernel-Firewall"
+date: 2026-06-09
 tags: [development]
 ---
 
