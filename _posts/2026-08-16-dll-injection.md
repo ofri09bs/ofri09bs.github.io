@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Deep Dive into Malware Dev: SYSTEM Reverse Shell via DLL Injection"
+title: "Coding Project: DLL Injection"
 date: 2026-08-16
 tags: [development]
 ---
