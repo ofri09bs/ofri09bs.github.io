@@ -9,16 +9,16 @@ tags: [development]
 On this project I was focused about 1 important principle that I think is the most important in malware development - **evasion**.
 
 So, what is the art of evasion?
-Evasion techniques are made to evade many defence systems in the target computer, such as Antivirus, EDRs, XDRs, IPS, IDS, and many many many more systems that use static/signature/dynamic analysis to find your malware.
+Evasion techniques are made to evade many defense systems in the target computer, such as Antivirus, EDRs, XDRs, IPS, IDS, and many many many more systems that use static/signature/dynamic analysis to find your malware.
 
 So this project focuses on **evading EDRs from all kinds and levels (kernel level and userland level) using BYOVD**.
 
 # Execution Flow
 The malware workflow is like that:
-* First stage: The **vulnerable driver and the payload DLL gets dropped** to the victim's computer from and bytes array in the header files.
+* First stage: The **vulnerable driver and the payload DLL gets dropped** to the victim's computer from a bytes array in the header files.
 * Second stage: The **driver gets loaded into the kernel**, and first thing we do is to **leak the kernel base address** (defeating KASLR)
 * Third stage: **Patching all the kernel targets** to blind EDRs
-* Fourth stage: **Escalate priviliges** to Debug, locate system target, and **inject the DLL into the process** to get a **reverse shell**.
+* Fourth stage: **Escalate privileges** to Debug, locate system target, and **inject the DLL into the process** to get a **reverse shell**.
 
 # The Vulnerable Driver (BYOVD - CVE-2019-16098)
 To read and modify kernel memory from userland without triggering **Windows Driver Signature Enforcement (DSE)**, this project leverages a **BYOVD (Bring Your Own Vulnerable Driver)** attack using `RTCore64.sys` - a legitimate, digitally signed driver originally developed by MSI for their Afterburner overclocking utility (**CVE-2019-16098**).   
@@ -28,7 +28,7 @@ The vulnerability stems from the driver exposing direct hardware and memory acce
 By sending a simple structured request containing a target kernel virtual address, a size, and a value, our userland process gains a clean **Arbitrary Kernel Read/Write primitive**.   
 Because these specific IOCTLs are designed to read and write up to 4 bytes (`DWORD`) per call, we have to carefully design our 64-bit pointer patches around a 4-byte boundary to avoid race conditions and BSODs, as explained in the sections below.
 
-For much better explanation, check this [artical](https://seg-fault.gitbook.io/researchs/windows-security-research/exploit-development/rtcore64.sys-cve-2019-16098)
+For much better explanation, check this [article](https://seg-fault.gitbook.io/researchs/windows-security-research/exploit-development/rtcore64.sys-cve-2019-16098)
 
 # Evading EDRs
 So how could you evade a system that monitors every move you do and inspects everything from the lowest level? - You blind it.
@@ -42,9 +42,24 @@ Indirect syscall is a technique designed to **evade EDRs in userland that analyz
 
 With this specific (indirect) technique, rather than simply executing the syscall instruction from our own assembly code, the program prepares the necessary parameters in the appropriate registers. It then **jumps to the function's original address within ntdll.dll to execute only the syscall instruction itself.** This prevents the detection of syscall executions originating from locations other than ntdll.dll.
 ```
-Normal Call:      [Malware] ──> [Hooked ntdll.dll Stub] ──> [EDR Inspection!]
-Direct Syscall:   [Malware ( executes 'syscall' )] ───────> [Kernel] (Flagged: RIP outside ntdll!)
-Indirect Syscall: [Malware (sets SSN)] ──> [Jumps to 'syscall' address inside ntdll.dll] ──> [Kernel]
+ntdll!NtAllocateVirtualMemory
++0x00   mov  r10, rcx          ┐
++0x03   mov  eax, SSN          │  ← EDR hooks these 5 bytes
++0x08   call [EDR_hook]        ┘     with a jmp to its inspector
+
++0x12   syscall                ← we jmp to HERE after setting the params manualy, skipping the hook
++0x14   ret                  
+
+[Our code]
+   mov  r10, rcx
+   mov  eax, SSN
+   jmp  ntdll!NtAllocateVirtualMemory+0x12
+                  |
+                  ▼
+          [ syscall executes ]
+                  │
+                  ▼
+          [ Windows Kernel ]
 ```
 You are welcomed to check my [repo](https://github.com/ofri09bs/Indirect-Syscall-Injection) on indirect Syscalls for more detailed explanation.
 
@@ -57,15 +72,15 @@ The 3 arrays are: **`PspCreateProcessNotifyRoutine`**, **`PspCreateThreadNotifyR
 
 Each element in the arrays contains an `_EX_CALLBACK_ROUTINE_BLOCK` structure (undocumented by windows) and every block hold a callback function address, something like this:
 ```
-slot[i]  →  ┌─────────────────────────┐
-            │ +0x00  RundownRef       │  refcount + flag bits
-            │ +0x08  Function         │  actual function pointer
-            │ +0x10  Context          │  usually NULL for Ex callbacks
-            │ +0x18  padding          │
-            └─────────────────────────┘
+PspCreateProcessNotifyRoutine[i]  →  ┌─────────────────────────┐
+                                     │ +0x00  RundownRef       │  refcount + flag bits
+                                     │ +0x08  Function         │  actual function pointer
+                                     │ +0x10  Context          │  usually NULL for Ex callbacks
+                                     │ +0x18  padding          │
+                                     └─────────────────────────┘
 ```
 
-So using mostly WinDbg we can find the offset of the function address, and then **overwrite the callback function address with a `xor eax, eax; ret` gadget so the callback function never runs, the EDR doesn’t get notified, and function returns NTSTATUS_SUCSESS.** 
+So using mostly WinDbg we can find the offset of the function address, and then **overwrite the callback function address with a `xor eax, eax; ret` gadget so the callback function never runs, the EDR doesn’t get notified, and function returns NTSTATUS_SUCCESS.** 
 Note that we DONT just null the function pointer, because this could be very unstable and could lead to a BSOD (if you call a function with address 0)
 
 We should also note 2 very important things; first, we don’t want to blind every component that registered a callback in these arrays, some of them are critical and should NOT be touched. This is why for every function address we iterate through, we check if it belongs to an known EDR (defined in a global list) by calculating to which loaded module the function address belongs to (using the linked list `PsLoadedModuleList`, checking if 
@@ -75,27 +90,30 @@ And second, our exploited driver gives us exactly 4 bytes to write/read, and an 
 So, I decided to overwrite ONLY of the gadget address and the EDR function are in the same 4 byte memory range (which should be pretty common), so we could overwrite with 1 go, without any race errors.
 
 ## ETW-TI Nulling
-Windows has a built in event tracing system called **ETW (Event Tracing for Windows).** Kernel components and usermode applications write events to it, and consumers subscribe to specific providers to read those events. Most ETW providers are for debugging, performance, or logging but there is one for security purposes - **Microsoft-Windows-Threat-Intelligence** is the kernel's own behavioral sensor, and it exists specifically so that **security products can detect process injection, remote memory operations, and credential theft.**
+Windows has a built in event tracing system called **ETW (Event Tracing for Windows).** Kernel components and usermode applications write events to it, and consumers subscribe to specific providers to read those events. Most ETW providers are for debugging, performance, or logging but there is one for security purposes - **`Microsoft-Windows-Threat-Intelligence`** is the kernel's own behavioral sensor, and it exists specifically so that **security products can detect process injection, remote memory operations, and credential theft.**
 
 Unlike process/thread/image callbacks (which notify that something happened), TI events describe what was done to it - remote memory allocations, cross process writes, remote thread hijacking. These are the exact signals an EDR's behavioral engine consumes when it decides that a process is being injected into.
 
-**By zeroing one byte in a kernel data structure, we silence the entire TI provider.** The EDR stays loaded, signed, and healthy but just blind from these attacks.
+**By zeroing one dword in a kernel data structure, we silence the entire TI provider.** The EDR stays loaded, signed, and healthy but just blind from these attacks.
 
-The kernel emits these events through a global `REGHANDLE`, `EtwThreatIntProvRegHandle`, which points to an `_ETW_REG_ENTRY` struct. The dispatcher checks the **EnableMask** byte before emitting; if it's zero, the event is skipped and the function returns `STATUS_SUCCESS` cleanly. The obvious attack is nulling the global handle itself, but that's an 8 byte pointer and our primitive is only 4 bytes; the two-write sequence could cause race condtions as I explained before, Zeroing EnableMask avoids this entirely. Before writing, we verify the provider's GUID so a shifted offset can never point us at the wrong entry, and we read back after the write to confirm the change landed.
+The kernel emits these events through a global `REGHANDLE`, `EtwThreatIntProvRegHandle`, which points to an `_ETW_REG_ENTRY` struct. The dispatcher checks the **EnableMask** byte before emitting; if it's zero, the event is skipped and the function returns `STATUS_SUCCESS` cleanly. The obvious attack is nulling the global handle itself, but that's an 8 byte pointer and our primitive is only 4 bytes; the two-write sequence could cause race conditions as I explained before, zeroing EnableMask avoids this entirely. Before writing, we verify the provider's GUID so a shifted offset can never point us at the wrong entry, and we read back after the write to confirm the change landed.
 ```
-EtwThreatIntProvRegHandle (Global in ntoskrnl)
-       │
-       ▼
-┌──────────────────────────────┐
-│ _ETW_REG_ENTRY               │
-│  +0x00 RegList               │
-│  ...                         │
-│  +0x20 GuidEntry  ───────────┼──> ┌──────────────────────────────┐
-└──────────────────────────────┘    │ _ETW_GUID_ENTRY              │
-                                    │  ...                         │
-                                    │  +0x60 ProviderEnableInfo    │
-                                    │         └── EnableMask (1B) ◄┼── Overwrite with 0x00
-                                    └──────────────────────────────┘
+EtwThreatIntProvRegHandle (global in ntoskrnl .data)
+        │
+        ▼
+   ┌──────────────────────────────┐
+   │ _ETW_REG_ENTRY               │
+   │  +0x00 RegList               │
+   │  ...                         │
+   │  +0x20 GuidEntry ────────────┼──> _ETW_GUID_ENTRY (sed for GUID safety check)
+   │  ...                         │
+   │  +0x64 EnableMask  ◄─────────┼── zero this (4-byte write zeros +0x64..+0x67)
+   │  +0x65 GroupEnableMask       │
+   │  +0x66 HostEnableMask        │
+   │  +0x67 HostGroupEnableMask   │
+   │  ...                         │
+   │  +0x188 SiloState            │ 
+   └──────────────────────────────┘
 ```
 # The Payload
 Although the main focus of this project is the EDR evading, I have also used a strong payload (that I have already created in past project) that **injects a DLL to a SYSTEM privileged instance of svchost.exe and creates a reverse shell**; but this time its way way stronger because Defender and any EDR that could have see and stop this malware - now cant. The DLL and the Driver files are written to an array of bytes and then dropped in the target computer.   
